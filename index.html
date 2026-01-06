@@ -95,7 +95,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            flex: 1; /* Balance width */
+            flex: 1; 
         }
         .header-right { justify-content: flex-end; }
         .header-center { font-weight: bold; color: var(--text-dim); text-transform: uppercase; font-size: 1.1rem; }
@@ -108,18 +108,21 @@
         .timer-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             background: rgba(0,0,0,0.2);
             padding: 5px 12px;
             border-radius: 20px;
             border: 1px solid var(--text-dim);
         }
         #timer-display { font-family: monospace; font-size: 1.1rem; font-weight: bold; width: 60px; text-align: center; }
+        
         .icon-btn { 
             background: none; border: none; color: var(--text-dim); 
-            cursor: pointer; font-size: 1rem; padding: 0; display: flex; 
+            cursor: pointer; padding: 0; display: flex; align-items: center;
         }
         .icon-btn:hover { color: white; }
+        .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        
         .blur-timer { filter: blur(5px); opacity: 0.5; }
 
         /* VIEWPORT & GRID */
@@ -132,16 +135,20 @@
             overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
-            justify-content: center; /* Centers the whole block horizontally */
+            justify-content: center; /* Centers the #pi-flow container */
         }
 
         #pi-flow {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center; /* Centers items within the flow */
+            justify-content: flex-start; /* LEFT ALIGNMENT for groups */
             align-content: flex-start;
+            /* STRICT WIDTH CONTROL */
+            /* 3 groups * ~230px (group width + gap) = ~690px. */
+            /* Setting max-width to 750px ensures a 4th group never fits. */
+            max-width: 750px; 
             width: 100%;
-            gap: 12px; /* Uniform gap instead of margins */
+            gap: 20px; 
         }
 
         .pi-group {
@@ -150,7 +157,7 @@
             padding: 6px;
             border-radius: 6px;
             border: 2px solid transparent;
-            min-height: 40px; /* Prevent collapse */
+            min-height: 40px; 
         }
         
         .pi-group.active {
@@ -158,7 +165,7 @@
             background: rgba(255, 215, 0, 0.05);
         }
 
-        /* GHOST FIX: Hide completely if empty */
+        /* Prevent empty groups from showing or taking up space */
         .pi-group:empty { display: none !important; }
 
         .digit {
@@ -252,7 +259,11 @@
                 <button class="btn-nav" onclick="exitToMenu()">← MENU</button>
                 <div class="timer-container">
                     <span id="timer-display">00:00</span>
-                    <button class="icon-btn" onclick="toggleTimer()" title="Toggle Timer Visibility">👁</button>
+                    <button class="icon-btn" onclick="toggleTimer()" title="Toggle Visibility">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -422,7 +433,6 @@
         const correctDigit = FULL_PI[globalStartIndex + localIndex];
 
         if (num === correctDigit) {
-            // Correct
             const span = document.createElement('span');
             span.className = 'digit';
             span.textContent = num;
@@ -431,7 +441,6 @@
             localIndex++;
             updateStatsUI();
             
-            // Auto Scroll
             const vp = document.getElementById('viewport');
             vp.scrollTop = vp.scrollHeight;
 
@@ -444,7 +453,6 @@
                 createNewGroup();
             }
         } else {
-            // Wrong
             playWrongSound();
             mistakeCount++;
             updateStatsUI();
