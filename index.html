@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Chunk Trainer (1-17)</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --surface: #2a2e35;
+            --primary: #4682b4;
+            --accent: #ffd700;
+            --text-main: #e0e0e0;
+            --text-dim: #6c757d;
+            --success: #2e7d32;
+            --danger: #c62828;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: 14px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            width: 95%;
+            max-width: 900px;
+            text-align: center;
+            border: 1px solid var(--text-dim);
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 { margin-top: 0; color: var(--accent); letter-spacing: 2px; }
+        p { color: var(--text-dim); margin-bottom: 30px; }
+
+        /* MENU GRID */
+        .chunk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+
+        .chunk-btn {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid var(--text-dim);
+            color: var(--text-main);
+            padding: 20px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chunk-btn:hover {
+            border-color: var(--primary);
+            background: rgba(70, 130, 180, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .chunk-btn span { font-size: 0.8rem; color: var(--text-dim); font-weight: normal; }
+
+        /* GAME VIEW */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--text-dim);
+        }
+
+        .score-box { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+        
+        .pi-viewport {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 25px;
+            height: 200px; 
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+        }
+
+        #pi-flow {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-content: flex-start;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .pi-group {
+            display: flex;
+            gap: 8px;
+            margin-right: 25px; 
+            padding: 5px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            margin-bottom: 10px;
+        }
+        
+        .pi-group.active {
+            border-color: var(--accent);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .digit {
+            width: 30px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: 4px;
+            font-weight: 900;
+            font-size: 1.4rem;
+        }
+
+        .digit.wrong {
+            background: var(--danger);
+            animation: shake 0.3s ease-in-out;
+        }
+
+        /* NUMPAD */
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .key-btn {
+            padding: 15px;
+            border: 2px solid var(--text-dim);
+            background: transparent;
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .key-btn:hover { background: var(--primary); border-color: var(--primary); }
+        .key-btn:active { transform: translateY(2px); }
+
+        .btn-nav {
+            background: transparent; border: 1px solid var(--text-dim);
+            color: var(--text-dim); padding: 8px 16px; border-radius: 6px;
+            cursor: pointer; font-weight: bold;
+        }
+        .btn-nav:hover { color: white; border-color: white; }
+
+        .hidden { display: none !important; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="menu-screen">
+        <h1>CHUNK TRAINER</h1>
+        <p>Select a 60-digit sector to practice.</p>
+        <div class="chunk-grid" id="menu-grid">
+            </div>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div class="header-bar">
+            <button class="btn-nav" onclick="exitToMenu()">← MENU</button>
+            <div style="text-transform:uppercase; color:var(--text-dim); font-weight:bold;" id="chunk-title">CHUNK 1</div>
+            <div class="score-box"><span id="score">0</span> / <span id="total">60</span></div>
+        </div>
+
+        <div class="pi-viewport" id="viewport">
+            <div id="pi-flow"></div>
+        </div>
+
+        <div class="numpad">
+            <button class="key-btn" onclick="handleInput('1')">1</button>
+            <button class="key-btn" onclick="handleInput('2')">2</button>
+            <button class="key-btn" onclick="handleInput('3')">3</button>
+            <button class="key-btn" onclick="handleInput('4')">4</button>
+            <button class="key-btn" onclick="handleInput('5')">5</button>
+            <button class="key-btn" onclick="handleInput('6')">6</button>
+            <button class="key-btn" onclick="handleInput('7')">7</button>
+            <button class="key-btn" onclick="handleInput('8')">8</button>
+            <button class="key-btn" onclick="handleInput('9')">9</button>
+            <button class="key-btn" onclick="handleInput('0')">0</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- 1. PI GENERATION ---
+    function generatePi(n) {
+        let digits = "";
+        let q = 1n, r = 0n, t = 1n, k = 1n, n_ = 3n, l = 3n;
+        while (digits.length < n) {
+            if (4n * q + r - t < n_ * t) {
+                digits += n_.toString();
+                let nr = 10n * (r - n_ * t);
+                n_ = ((10n * (3n * q + r)) / t) - 10n * n_;
+                q *= 10n; r = nr;
+            } else {
+                let nr = (2n * q + r) * l;
+                let nn = (q * (7n * k + 2n) + r * l) / (t * l);
+                q *= k; t *= l; l += 2n; k += 1n; n_ = nn; r = nr;
+            }
+        }
+        // Returns digits starting after '3.'
+        // Note: The logic above generates '31415...', so substring(1) gives decimal places
+        return digits.substring(1); 
+    }
+
+    // Generate enough for 1010 decimal places
+    const FULL_PI = generatePi(1020); 
+    
+    // --- 2. CONFIGURATION ---
+    const GLOBAL_OFFSET = 10; // Skip "1415926535"
+    const CHUNK_SIZE = 60;
+    const MAX_DIGITS = 1010;  // We stop exactly here
+    const TOTAL_CHUNKS = 17;
+
+    // --- 3. STATE ---
+    let currentChunkId = 1;
+    let localIndex = 0; // 0 to 59
+    let globalStartIndex = 0;
+    let currentChunkLength = 60;
+    let currentGroup = null;
+
+    // --- 4. INIT MENU ---
+    const menuGrid = document.getElementById('menu-grid');
+    for(let i=1; i<=TOTAL_CHUNKS; i++) {
+        const btn = document.createElement('div');
+        btn.className = 'chunk-btn';
+        
+        // Calculate range for label
+        // Start: 10 + (i-1)*60
+        // End: Start + 60
+        const s = GLOBAL_OFFSET + (i-1)*CHUNK_SIZE;
+        const e = Math.min(s + CHUNK_SIZE, MAX_DIGITS);
+        
+        btn.innerHTML = `CHUNK ${i} <span>#${s+1} - #${e}</span>`;
+        btn.onclick = () => startChunk(i);
+        menuGrid.appendChild(btn);
+    }
+
+    // --- 5. GAME LOGIC ---
+    function startChunk(id) {
+        currentChunkId = id;
+        
+        // Calculate start index in FULL_PI
+        // Offset 10 means index 10 (since 0-9 are the first 10 digits)
+        globalStartIndex = GLOBAL_OFFSET + (id - 1) * CHUNK_SIZE;
+        
+        // Calculate length (handle last chunk cutting off)
+        const theoreticalEnd = globalStartIndex + CHUNK_SIZE;
+        // If theoretical end > 1010, cap it.
+        // Wait, 1010 digits implies index 0 to 1009.
+        // So we cap length so globalStartIndex + len <= 1010
+        const maxLen = MAX_DIGITS - globalStartIndex;
+        currentChunkLength = Math.min(CHUNK_SIZE, maxLen);
+
+        // UI Setup
+        document.getElementById('menu-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('chunk-title').textContent = `CHUNK ${id}`;
+        document.getElementById('total').textContent = currentChunkLength;
+        
+        resetRound();
+    }
+
+    function resetRound() {
+        localIndex = 0;
+        document.getElementById('score').textContent = '0';
+        document.getElementById('pi-flow').innerHTML = '';
+        createNewGroup();
+    }
+
+    function createNewGroup() {
+        if (currentGroup) currentGroup.classList.remove('active');
+        
+        const g = document.createElement('div');
+        g.className = 'pi-group active';
+        document.getElementById('pi-flow').appendChild(g);
+        currentGroup = g;
+    }
+
+    function handleInput(num) {
+        if (localIndex >= currentChunkLength) return; // Done
+
+        const correctDigit = FULL_PI[globalStartIndex + localIndex];
+
+        if (num === correctDigit) {
+            // Correct
+            const span = document.createElement('span');
+            span.className = 'digit';
+            span.textContent = num;
+            currentGroup.appendChild(span);
+            
+            localIndex++;
+            document.getElementById('score').textContent = localIndex;
+            
+            // Scroll down
+            const vp = document.getElementById('viewport');
+            vp.scrollTop = vp.scrollHeight;
+
+            // Check Win
+            if (localIndex >= currentChunkLength) {
+                doWin();
+                return;
+            }
+
+            // New Group every 6
+            if (localIndex % 6 === 0) {
+                createNewGroup();
+            }
+        } else {
+            // Wrong
+            playWrongSound();
+            const span = document.createElement('span');
+            span.className = 'digit wrong';
+            span.textContent = num;
+            currentGroup.appendChild(span);
+            // Don't advance index, let them retry
+            setTimeout(() => span.remove(), 400);
+        }
+    }
+
+    function doWin() {
+        fireConfetti();
+        // Maybe auto-reset after delay? Or just sit there.
+        // Let's add a "Replay" button text change?
+        // Actually confetti is enough feedback.
+    }
+
+    function exitToMenu() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('menu-screen').classList.remove('hidden');
+    }
+
+    // --- UTILS ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playWrongSound() {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, audioCtx.currentTime); 
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function fireConfetti() {
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(!document.getElementById('game-screen').classList.contains('hidden')) {
+            if (e.key >= '0' && e.key <= '9') handleInput(e.key);
+            if (e.key === 'Escape') exitToMenu();
+            if (e.key === 'r') resetRound(); // R to restart chunk
+        }
+    });
+
+</script>
+</body>
+</html>
