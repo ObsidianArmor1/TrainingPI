@@ -31,16 +31,17 @@
 
         .container {
             background: var(--surface);
-            padding: 2.5rem;
+            padding: 2rem;
             border-radius: 14px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             width: 95%;
-            max-width: 900px;
+            max-width: 950px;
             text-align: center;
             border: 1px solid var(--text-dim);
-            min-height: 400px;
+            min-height: 450px;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         h1 { margin-top: 0; color: var(--accent); letter-spacing: 2px; }
@@ -49,9 +50,11 @@
         /* MENU GRID */
         .chunk-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 15px;
             width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
         .chunk-btn {
@@ -78,7 +81,7 @@
 
         .chunk-btn span { font-size: 0.8rem; color: var(--text-dim); font-weight: normal; }
 
-        /* GAME VIEW */
+        /* GAME HEADER */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -88,37 +91,66 @@
             border-bottom: 1px solid var(--text-dim);
         }
 
-        .score-box { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
-        
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1; /* Balance width */
+        }
+        .header-right { justify-content: flex-end; }
+        .header-center { font-weight: bold; color: var(--text-dim); text-transform: uppercase; font-size: 1.1rem; }
+
+        .stat-item { font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .stat-mistakes { color: var(--danger); margin-right: 15px; }
+        .stat-score { color: var(--accent); font-size: 1.4rem; }
+
+        /* TIMER */
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--text-dim);
+        }
+        #timer-display { font-family: monospace; font-size: 1.1rem; font-weight: bold; width: 60px; text-align: center; }
+        .icon-btn { 
+            background: none; border: none; color: var(--text-dim); 
+            cursor: pointer; font-size: 1rem; padding: 0; display: flex; 
+        }
+        .icon-btn:hover { color: white; }
+        .blur-timer { filter: blur(5px); opacity: 0.5; }
+
+        /* VIEWPORT & GRID */
         .pi-viewport {
             background: rgba(0, 0, 0, 0.4);
             border-radius: 10px;
             padding: 30px;
             margin-bottom: 25px;
-            height: 200px; 
+            height: 220px; 
             overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
-            justify-content: center;
+            justify-content: center; /* Centers the whole block horizontally */
         }
 
         #pi-flow {
             display: flex;
             flex-wrap: wrap;
-            justify-content: flex-start;
+            justify-content: center; /* Centers items within the flow */
             align-content: flex-start;
             width: 100%;
-            gap: 10px;
+            gap: 12px; /* Uniform gap instead of margins */
         }
 
         .pi-group {
             display: flex;
-            gap: 8px;
-            margin-right: 25px; 
-            padding: 5px;
+            gap: 5px;
+            padding: 6px;
             border-radius: 6px;
             border: 2px solid transparent;
-            margin-bottom: 10px;
+            min-height: 40px; /* Prevent collapse */
         }
         
         .pi-group.active {
@@ -126,9 +158,12 @@
             background: rgba(255, 215, 0, 0.05);
         }
 
+        /* GHOST FIX: Hide completely if empty */
+        .pi-group:empty { display: none !important; }
+
         .digit {
-            width: 30px;
-            height: 40px;
+            width: 32px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -161,6 +196,7 @@
             font-size: 1.4rem;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.1s;
         }
         .key-btn:hover { background: var(--primary); border-color: var(--primary); }
         .key-btn:active { transform: translateY(2px); }
@@ -171,6 +207,24 @@
             cursor: pointer; font-weight: bold;
         }
         .btn-nav:hover { color: white; border-color: white; }
+
+        /* WIN MODAL */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: none; align-items: center; justify-content: center;
+            border-radius: 14px;
+        }
+        .modal-content {
+            background: var(--surface); border: 2px solid var(--accent);
+            padding: 40px; border-radius: 12px; text-align: center;
+        }
+        .stat-big { font-size: 3rem; font-weight: 900; color: white; margin: 10px 0; }
+        .btn-restart { 
+            background: var(--accent); color: var(--bg); border: none;
+            padding: 12px 30px; font-weight: bold; font-size: 1.2rem;
+            border-radius: 6px; cursor: pointer; margin-top: 20px;
+        }
 
         .hidden { display: none !important; }
 
@@ -187,16 +241,27 @@
     
     <div id="menu-screen">
         <h1>CHUNK TRAINER</h1>
-        <p>Select a 60-digit sector to practice.</p>
+        <p>Select a sector (10 groups of 6)</p>
         <div class="chunk-grid" id="menu-grid">
             </div>
     </div>
 
     <div id="game-screen" class="hidden">
         <div class="header-bar">
-            <button class="btn-nav" onclick="exitToMenu()">← MENU</button>
-            <div style="text-transform:uppercase; color:var(--text-dim); font-weight:bold;" id="chunk-title">CHUNK 1</div>
-            <div class="score-box"><span id="score">0</span> / <span id="total">60</span></div>
+            <div class="header-left">
+                <button class="btn-nav" onclick="exitToMenu()">← MENU</button>
+                <div class="timer-container">
+                    <span id="timer-display">00:00</span>
+                    <button class="icon-btn" onclick="toggleTimer()" title="Toggle Timer Visibility">👁</button>
+                </div>
+            </div>
+
+            <div class="header-center" id="chunk-title">CHUNK 1</div>
+
+            <div class="header-right">
+                <div class="stat-item stat-mistakes">Mistakes: <span id="mistake-count">0</span></div>
+                <div class="stat-item stat-score"><span id="score">0</span> / <span id="total">60</span></div>
+            </div>
         </div>
 
         <div class="pi-viewport" id="viewport">
@@ -214,6 +279,22 @@
             <button class="key-btn" onclick="handleInput('8')">8</button>
             <button class="key-btn" onclick="handleInput('9')">9</button>
             <button class="key-btn" onclick="handleInput('0')">0</button>
+        </div>
+    </div>
+
+    <div id="win-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:var(--accent); margin-top:0;">SECTOR CLEAR</h2>
+            
+            <p style="margin-bottom:5px;">Time</p>
+            <div class="stat-big" id="final-time">00:00</div>
+            
+            <p style="margin-bottom:5px;">Mistakes</p>
+            <div class="stat-big" id="final-mistakes" style="font-size:2rem; color:var(--danger)">0</div>
+
+            <button class="btn-restart" onclick="restartSameChunk()">AGAIN</button>
+            <br><br>
+            <button class="btn-nav" onclick="exitToMenu()">MENU</button>
         </div>
     </div>
 
@@ -236,39 +317,35 @@
                 q *= k; t *= l; l += 2n; k += 1n; n_ = nn; r = nr;
             }
         }
-        // Returns digits starting after '3.'
-        // Note: The logic above generates '31415...', so substring(1) gives decimal places
         return digits.substring(1); 
     }
 
-    // Generate enough for 1010 decimal places
     const FULL_PI = generatePi(1020); 
     
     // --- 2. CONFIGURATION ---
-    const GLOBAL_OFFSET = 10; // Skip "1415926535"
+    const GLOBAL_OFFSET = 10; 
     const CHUNK_SIZE = 60;
-    const MAX_DIGITS = 1010;  // We stop exactly here
+    const MAX_DIGITS = 1010;  
     const TOTAL_CHUNKS = 17;
 
     // --- 3. STATE ---
     let currentChunkId = 1;
-    let localIndex = 0; // 0 to 59
+    let localIndex = 0; 
     let globalStartIndex = 0;
     let currentChunkLength = 60;
     let currentGroup = null;
+    
+    let mistakeCount = 0;
+    let timerSeconds = 0;
+    let timerInterval = null;
 
     // --- 4. INIT MENU ---
     const menuGrid = document.getElementById('menu-grid');
     for(let i=1; i<=TOTAL_CHUNKS; i++) {
         const btn = document.createElement('div');
         btn.className = 'chunk-btn';
-        
-        // Calculate range for label
-        // Start: 10 + (i-1)*60
-        // End: Start + 60
         const s = GLOBAL_OFFSET + (i-1)*CHUNK_SIZE;
         const e = Math.min(s + CHUNK_SIZE, MAX_DIGITS);
-        
         btn.innerHTML = `CHUNK ${i} <span>#${s+1} - #${e}</span>`;
         btn.onclick = () => startChunk(i);
         menuGrid.appendChild(btn);
@@ -277,21 +354,13 @@
     // --- 5. GAME LOGIC ---
     function startChunk(id) {
         currentChunkId = id;
-        
-        // Calculate start index in FULL_PI
-        // Offset 10 means index 10 (since 0-9 are the first 10 digits)
         globalStartIndex = GLOBAL_OFFSET + (id - 1) * CHUNK_SIZE;
-        
-        // Calculate length (handle last chunk cutting off)
-        const theoreticalEnd = globalStartIndex + CHUNK_SIZE;
-        // If theoretical end > 1010, cap it.
-        // Wait, 1010 digits implies index 0 to 1009.
-        // So we cap length so globalStartIndex + len <= 1010
         const maxLen = MAX_DIGITS - globalStartIndex;
         currentChunkLength = Math.min(CHUNK_SIZE, maxLen);
 
         // UI Setup
         document.getElementById('menu-screen').classList.add('hidden');
+        document.getElementById('win-modal').style.display = 'none';
         document.getElementById('game-screen').classList.remove('hidden');
         document.getElementById('chunk-title').textContent = `CHUNK ${id}`;
         document.getElementById('total').textContent = currentChunkLength;
@@ -301,14 +370,46 @@
 
     function resetRound() {
         localIndex = 0;
-        document.getElementById('score').textContent = '0';
+        mistakeCount = 0;
+        timerSeconds = 0;
+        
+        updateStatsUI();
+        startTimer();
+        
         document.getElementById('pi-flow').innerHTML = '';
         createNewGroup();
     }
 
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            updateTimerDisplay();
+        }, 1000);
+        updateTimerDisplay();
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const s = (timerSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('timer-display').textContent = `${m}:${s}`;
+    }
+
+    function toggleTimer() {
+        document.getElementById('timer-display').classList.toggle('blur-timer');
+    }
+
+    function updateStatsUI() {
+        document.getElementById('score').textContent = localIndex;
+        document.getElementById('mistake-count').textContent = mistakeCount;
+    }
+
     function createNewGroup() {
         if (currentGroup) currentGroup.classList.remove('active');
-        
         const g = document.createElement('div');
         g.className = 'pi-group active';
         document.getElementById('pi-flow').appendChild(g);
@@ -316,7 +417,7 @@
     }
 
     function handleInput(num) {
-        if (localIndex >= currentChunkLength) return; // Done
+        if (localIndex >= currentChunkLength) return;
 
         const correctDigit = FULL_PI[globalStartIndex + localIndex];
 
@@ -328,43 +429,51 @@
             currentGroup.appendChild(span);
             
             localIndex++;
-            document.getElementById('score').textContent = localIndex;
+            updateStatsUI();
             
-            // Scroll down
+            // Auto Scroll
             const vp = document.getElementById('viewport');
             vp.scrollTop = vp.scrollHeight;
 
-            // Check Win
             if (localIndex >= currentChunkLength) {
                 doWin();
                 return;
             }
 
-            // New Group every 6
             if (localIndex % 6 === 0) {
                 createNewGroup();
             }
         } else {
             // Wrong
             playWrongSound();
+            mistakeCount++;
+            updateStatsUI();
+            
             const span = document.createElement('span');
             span.className = 'digit wrong';
             span.textContent = num;
             currentGroup.appendChild(span);
-            // Don't advance index, let them retry
             setTimeout(() => span.remove(), 400);
         }
     }
 
     function doWin() {
+        stopTimer();
         fireConfetti();
-        // Maybe auto-reset after delay? Or just sit there.
-        // Let's add a "Replay" button text change?
-        // Actually confetti is enough feedback.
+        document.getElementById('win-modal').style.display = 'flex';
+        document.getElementById('final-time').textContent = document.getElementById('timer-display').textContent;
+        document.getElementById('final-mistakes').textContent = mistakeCount;
+    }
+
+    function restartSameChunk() {
+        document.getElementById('win-modal').style.display = 'none';
+        resetRound();
     }
 
     function exitToMenu() {
+        stopTimer();
         document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('win-modal').style.display = 'none';
         document.getElementById('menu-screen').classList.remove('hidden');
     }
 
@@ -385,18 +494,14 @@
     }
 
     function fireConfetti() {
-        confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 }
-        });
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     }
 
     document.addEventListener('keydown', (e) => {
         if(!document.getElementById('game-screen').classList.contains('hidden')) {
             if (e.key >= '0' && e.key <= '9') handleInput(e.key);
             if (e.key === 'Escape') exitToMenu();
-            if (e.key === 'r') resetRound(); // R to restart chunk
+            if (e.key === 'r') resetRound(); 
         }
     });
 
